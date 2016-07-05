@@ -6,7 +6,7 @@ Package at is a framework for communication with AT-compatible devices like Huaw
 
 ### Installation
 
-```
+``` 
 go get github.com/yazver/gsmmodem
 ```
 
