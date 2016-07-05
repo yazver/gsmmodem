@@ -1,15 +1,16 @@
-## AT [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/xlab/at)
+## AT [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/yazver/gsmmodem)
 
 Fork of  [github.com/xlab/at](https://github.com/xlab/at)
+
 Package at is a framework for communication with AT-compatible devices like Huawei modems via serial port. Currently this package is well-suited for Huawei devices and since AT-commands set may vary from device to device, sometimes you'll be forced to implement some logic by yourself.
 
 ### Installation
 
 ```
-go get github.com/xlab/at
+go get github.com/yazver/gsmmodem
 ```
 
-#Full documentation: [godoc](https://godoc.org/github.com/xlab/at).
+Full documentation: [godoc](https://godoc.org/github.com/yazver/gsmmodem).
 
 ### Features
 
