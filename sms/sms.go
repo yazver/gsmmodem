@@ -14,10 +14,11 @@ import (
 
 // Common errors.
 var (
-	ErrUnknownEncoding    = errors.New("sms: unsupported encoding")
-	ErrUnknownMessageType = errors.New("sms: unsupported message type")
-	ErrIncorrectSize      = errors.New("sms: decoded incorrect size of field")
-	ErrNonRelative        = errors.New("sms: non-relative validity period support is not implemented yet")
+	ErrUnknownEncoding                = errors.New("sms: unsupported encoding")
+	ErrUnknownMessageType             = errors.New("sms: unsupported message type")
+	ErrIncorrectSize                  = errors.New("sms: decoded incorrect size of field")
+	ErrNonRelative                    = errors.New("sms: non-relative validity period support is not implemented yet")
+	ErrInvalidConcatenationParameters = errors.New("sms: invalid concatenation parameters")
 )
 
 // MessageType represents the message's type.
@@ -186,6 +187,64 @@ func (t *Timestamp) ReadFrom(octets []byte) {
 	*t = Timestamp(date.In(time.Local))
 }
 
+// ConcatenationInformationElement is IE that indicates SMS concatenation.
+// This implementation handles both 8-bit and 16-bit concatenation
+// indication, and exposes the specific useful details of this
+// IE as instance variables.
+type ConcatenationInformationElement struct {
+	// CSMS reference number, must be same for all the SMS parts in the CSMS
+	ReferenceNumber uint16
+	// Total number of parts. The value shall remain constant for every short
+	// message which makes up the concatenated short message. If the value is zero then
+	// the receiving entity shall ignore the whole information element
+	NumberOfParts byte
+	// This part's number in the sequence. The value shall start at 1 and
+	// increment for every short message which makes up the concatenated short message
+	PartNumber byte
+}
+
+// PDU serializes the concatenation information element into octets ready to be transferred.
+// Returns the number of TPDU bytes in the produced PDU.
+// Complies with 3GPP TS 23.040.
+func (ie *ConcatenationInformationElement) PDU() (int, []byte, error) {
+	if ie.NumberOfParts == 0 || ie.PartNumber == 0 {
+		return 0, nil, ErrInvalidConcatenationParameters
+	}
+	var buf bytes.Buffer
+	if ie.ReferenceNumber > 0xFF {
+		buf.WriteByte(0x08) // Information element identifier for 16 bit reference number
+		buf.WriteByte(0x04) // Data lebgth of information element
+		buf.WriteByte(byte(ie.ReferenceNumber >> 8))
+		buf.WriteByte(byte(ie.ReferenceNumber))
+	} else {
+		buf.WriteByte(0x00) // Information element identifier for 8 bit reference number
+		buf.WriteByte(0x03) // Data lebgth of information element
+		buf.WriteByte(byte(ie.ReferenceNumber))
+	}
+	buf.WriteByte(ie.NumberOfParts)
+	buf.WriteByte(ie.PartNumber)
+	return buf.Len(), buf.Bytes(), nil
+}
+
+// UserDataHeader is User Data Header
+type UserDataHeader struct {
+	ConcatenationIE ConcatenationInformationElement
+}
+
+// PDU serializes the user data header into octets ready to be transferred.
+// Returns the number of TPDU bytes in the produced PDU.
+// Complies with 3GPP TS 23.040.
+func (udh *UserDataHeader) PDU() (int, []byte, error) {
+	udhl, ie, err := udh.ConcatenationIE.PDU()
+	if err != nil {
+		return 0, nil, err
+	}
+	var buf bytes.Buffer
+	buf.WriteByte(byte(udhl))
+	buf.Write(ie)
+	return buf.Len(), buf.Bytes(), nil
+}
+
 // Message represents an SMS message, including some advanced fields. This
 // is a user-friendly high-level representation that should be used around.
 // Complies with 3GPP TS 23.040.
@@ -203,6 +262,7 @@ type Message struct {
 	MessageReference         byte
 	ReplyPathExists          bool
 	UserDataStartsWithHeader bool
+	UserDataHeader           UserDataHeader
 	StatusReportIndication   bool
 	StatusReportRequest      bool
 	MoreMessagesToSend       bool
@@ -256,19 +316,27 @@ func (s *Message) PDU() (int, []byte, error) {
 		sms.DataCodingScheme = byte(s.Encoding)
 		sms.ServiceCentreTimestamp = s.ServiceCenterTime.PDU()
 
-		var userData []byte
+		var userDataBuf bytes.Buffer
+		if s.UserDataStartsWithHeader {
+			if _, udh, err := s.UserDataHeader.PDU(); err == nil {
+				userDataBuf.Write(udh)
+			} else {
+				return 0, nil, err
+			}
+		}
 		if s.Encoding == Encodings.Gsm7Bit {
-			userData = pdu.Encode7Bit(s.Text)
-			sms.UserDataLength = byte(len(s.Text))
+			sms.UserDataLength = byte(userDataBuf.Len())
+			userDataBuf.Write(pdu.Encode7Bit(s.Text))
+			sms.UserDataLength += byte(len(s.Text))
 		} else if s.Encoding == Encodings.UCS2 {
-			userData = pdu.EncodeUcs2(s.Text)
-			sms.UserDataLength = byte(len(userData))
+			userDataBuf.Write(pdu.EncodeUcs2(s.Text))
+			sms.UserDataLength = byte(userDataBuf.Len())
 		} else {
 			return 0, nil, ErrUnknownEncoding
 		}
 
-		sms.UserDataLength = byte(len(userData))
-		sms.UserData = userData
+		// sms.UserDataLength = byte(len(userData))
+		sms.UserData = userDataBuf.Bytes()
 		n, err := buf.Write(sms.Bytes())
 		if err != nil {
 			return 0, nil, err
@@ -303,18 +371,27 @@ func (s *Message) PDU() (int, []byte, error) {
 			return 0, nil, ErrNonRelative
 		}
 
-		var userData []byte
+		var userDataBuf bytes.Buffer
+		if s.UserDataStartsWithHeader {
+			if _, udh, err := s.UserDataHeader.PDU(); err == nil {
+				userDataBuf.Write(udh)
+			} else {
+				return 0, nil, err
+			}
+		}
 		if s.Encoding == Encodings.Gsm7Bit {
-			userData = pdu.Encode7Bit(s.Text)
-			sms.UserDataLength = byte(len(s.Text))
+			sms.UserDataLength = byte(userDataBuf.Len())
+			userDataBuf.Write(pdu.Encode7Bit(s.Text))
+			sms.UserDataLength += byte(len(s.Text))
 		} else if s.Encoding == Encodings.UCS2 {
-			userData = pdu.EncodeUcs2(s.Text)
-			sms.UserDataLength = byte(len(userData))
+			userDataBuf.Write(pdu.EncodeUcs2(s.Text))
+			sms.UserDataLength = byte(userDataBuf.Len())
 		} else {
 			return 0, nil, ErrUnknownEncoding
 		}
 
-		sms.UserData = userData
+		// sms.UserDataLength = byte(len(userData))
+		sms.UserData = userDataBuf.Bytes()
 		n, err := buf.Write(sms.Bytes())
 		if err != nil {
 			return 0, nil, err

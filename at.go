@@ -444,3 +444,42 @@ func (d *Device) SendSMS(text string, address sms.PhoneNumber) (err error) {
 	err = d.Commands.CMGS(n, octets)
 	return
 }
+
+var (
+    MessageReferenceCounter byte
+    MultipartReferenceNumber uint16
+)
+// SendLongSMS sends an SMS message with given text to the given address,
+// the encoding and other parameters are default.
+func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
+    msg := sms.Message{
+		Text:     text,
+		Type:     sms.MessageTypes.Submit,
+		Encoding: sms.Encodings.Gsm7Bit,
+		Address:  address,
+		VPFormat: sms.ValidityPeriodFormats.Relative,
+		VP:       sms.ValidityPeriod(24 * time.Hour * 4),
+        MessageReference: MessageReferenceCounter
+	}
+    maxSize := 130
+	for _, w := range text {
+		// detected a double-width char
+		if w > 1 {
+			msg.Encoding = sms.Encodings.UCS2
+            maxSize = 60
+			break
+		}
+	}
+    msgParts := strings.SplitN(text)
+
+    if msg.Encoding == sms.Encodings.UCS2 {
+        
+    }
+
+	n, octets, err := msg.PDU()
+	if err != nil {
+		return err
+	}
+	err = d.Commands.CMGS(n, octets)
+	return
+}
