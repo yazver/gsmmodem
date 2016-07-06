@@ -465,7 +465,6 @@ func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
 		Address:          address,
 		VPFormat:         sms.ValidityPeriodFormats.Relative,
 		VP:               sms.ValidityPeriod(24 * time.Hour * 4),
-		MessageReference: MessageReferenceCounter,
 	}
 	maxSize := 130
 	for _, w := range text {
@@ -475,7 +474,7 @@ func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
 			maxSize = 60
 			break
 		}
-	} 
+	}
 
 	msgParts := util.SplitStringBySize(text, maxSize)
 	numberOfParts := byte(255)
