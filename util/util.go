@@ -45,3 +45,24 @@ func MustBytes(hex string) []byte {
 func HexString(octets []byte) string {
 	return fmt.Sprintf("%2X", octets)
 }
+
+// SplitStringBySize Split string to parts by size (https://play.golang.org/p/uUKx0hsm_O)
+func SplitStringBySize(str string, maxSize int) []string {
+	result := []string{}
+	startIndex := 0
+	count := 0
+	for index := range str {
+		if count == maxSize {
+			result = append(result, str[startIndex:index])
+			startIndex = index
+			count = 1
+		} else {
+			count++
+		}
+	}
+	s := str[startIndex:]
+	if s != "" {
+		result = append(result, s)
+	}
+	return result
+}

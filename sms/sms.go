@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/xlab/at/pdu"
+	"github.com/yazver/gsmmodem/pdu"
 )
 
 // Common errors.
@@ -215,7 +215,7 @@ func (ie *ConcatenationInformationElement) PDU() (int, []byte, error) {
 		buf.WriteByte(0x08) // Information element identifier for 16 bit reference number
 		buf.WriteByte(0x04) // Data lebgth of information element
 		buf.WriteByte(byte(ie.ReferenceNumber >> 8))
-		buf.WriteByte(byte(ie.ReferenceNumber))
+		buf.WriteByte(byte(ie.ReferenceNumber & 0xFF))
 	} else {
 		buf.WriteByte(0x00) // Information element identifier for 8 bit reference number
 		buf.WriteByte(0x03) // Data lebgth of information element

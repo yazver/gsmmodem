@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab/at/pdu"
+	"github.com/yazver/gsmmodem/pdu"
 )
 
 // Needs to be changed for each particular configuration.

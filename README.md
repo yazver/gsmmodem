@@ -1,6 +1,6 @@
 ## AT [![GoDoc](http://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/yazver/gsmmodem)
 
-Fork of  [github.com/xlab/at](https://github.com/xlab/at)
+Fork of  [github.com/yazver/gsmmodem](https://github.com/yazver/gsmmodem)
 
 Package at is a framework for communication with AT-compatible devices like Huawei modems via serial port. Currently this package is well-suited for Huawei devices and since AT-commands set may vary from device to device, sometimes you'll be forced to implement some logic by yourself.
 
@@ -16,7 +16,7 @@ Full documentation: [godoc](https://godoc.org/github.com/yazver/gsmmodem).
 
 This framework includes facilities for device monitoring, sending and receiving AT-commands, encoding and decoding SMS messages from or to PDU octet representation (as specified in [3GPP TS 23.040]). An example of incoming SMS monitor application is given in [example/daemon].
 
-[example/daemon]: https://github.com/xlab/at/blob/master/example/daemon
+[example/daemon]: https://github.com/yazver/gsmmodem/blob/master/example/daemon
 [3GPP TS 23.040]: http://www.etsi.org/deliver/etsi_ts/123000_123099/123040/11.05.00_60/ts_123040v110500p.pdf
 
 ### Examples

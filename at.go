@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/tarm/serial"
-	"github.com/xlab/at/pdu"
-	"github.com/xlab/at/sms"
+	"github.com/yazver/gsmmodem/pdu"
+	"github.com/yazver/gsmmodem/sms"
+	"github.com/yazver/gsmmodem/util"
 )
 
 // BaudRate defines the default speed of serial connection.
@@ -446,13 +447,17 @@ func (d *Device) SendSMS(text string, address sms.PhoneNumber) (err error) {
 }
 
 var (
-	MessageReferenceCounter  byte
-	MultipartReferenceNumber uint16
+	messageReferenceCounter  byte
+	multipartReferenceNumber uint16
 )
 
 // SendLongSMS sends an SMS message with given text to the given address,
 // the encoding and other parameters are default.
 func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
+	defer func() {
+		multipartReferenceNumber = uint16((uint32(multipartReferenceNumber) + 1) & 0xFFFF)
+	}()
+
 	msg := sms.Message{
 		Text:             text,
 		Type:             sms.MessageTypes.Submit,
@@ -470,17 +475,36 @@ func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
 			maxSize = 60
 			break
 		}
-	}
-	msgParts := strings.SplitN(text)
+	} 
 
-	if msg.Encoding == sms.Encodings.UCS2 {
+	msgParts := util.SplitStringBySize(text, maxSize)
+	numberOfParts := byte(255)
+	if len(msgParts) <= 255 {
+		numberOfParts = byte(len(msgParts))
+	}
+	msg.UserDataStartsWithHeader = numberOfParts > 1
+	for index, part := range msgParts {
+		msg.MessageReference = messageReferenceCounter
+		msg.Text = part
+		if msg.Encoding == sms.Encodings.UCS2 {
+		}
+		if numberOfParts > 1 {
+			msg.UserDataHeader.ConcatenationIE = sms.ConcatenationInformationElement{NumberOfParts: numberOfParts, PartNumber: byte(index + 1), ReferenceNumber: multipartReferenceNumber}
+		}
+		messageReferenceCounter = byte((uint16(messageReferenceCounter) + 1) & 0xFF)
 
+		if index >= int(numberOfParts) {
+			break
+		}
+
+		n, octets, err := msg.PDU()
+		if err != nil {
+			return err
+		}
+		if err = d.Commands.CMGS(n, octets); err != nil {
+			return err
+		}
 	}
 
-	n, octets, err := msg.PDU()
-	if err != nil {
-		return err
-	}
-	err = d.Commands.CMGS(n, octets)
 	return
 }

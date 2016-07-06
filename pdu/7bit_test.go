@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/xlab/at/util"
+	"github.com/yazver/gsmmodem/util"
 )
 
 func TestEncode7Bit(t *testing.T) {

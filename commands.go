@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/xlab/at/pdu"
-	"github.com/xlab/at/sms"
-	"github.com/xlab/at/util"
+	"github.com/yazver/gsmmodem/pdu"
+	"github.com/yazver/gsmmodem/sms"
+	"github.com/yazver/gsmmodem/util"
 )
 
 // DeviceProfile hides the device-specific implementation
