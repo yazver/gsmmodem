@@ -459,12 +459,12 @@ func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
 	}()
 
 	msg := sms.Message{
-		Text:             text,
-		Type:             sms.MessageTypes.Submit,
-		Encoding:         sms.Encodings.Gsm7Bit,
-		Address:          address,
-		VPFormat:         sms.ValidityPeriodFormats.Relative,
-		VP:               sms.ValidityPeriod(24 * time.Hour * 4),
+		Text:     text,
+		Type:     sms.MessageTypes.Submit,
+		Encoding: sms.Encodings.Gsm7Bit,
+		Address:  address,
+		VPFormat: sms.ValidityPeriodFormats.Relative,
+		VP:       sms.ValidityPeriod(24 * time.Hour * 4),
 	}
 	maxSize := 130
 	for _, w := range text {
