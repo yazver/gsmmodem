@@ -15,4 +15,4 @@
 // About
 //
 // Project page: https://github.com/yazver/gsmmodem
-package at
+package gsmmodem

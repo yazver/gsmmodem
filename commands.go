@@ -1,4 +1,4 @@
-package at
+package gsmmodem
 
 import (
 	"errors"

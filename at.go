@@ -1,4 +1,4 @@
-package at
+package gsmmodem
 
 import (
 	"bufio"
@@ -453,6 +453,7 @@ var (
 
 // SendLongSMS sends an SMS message with given text to the given address,
 // the encoding and other parameters are default.
+// If the message is very long, it will be sent in parts.  
 func (d *Device) SendLongSMS(text string, address sms.PhoneNumber) (err error) {
 	defer func() {
 		multipartReferenceNumber = uint16((uint32(multipartReferenceNumber) + 1) & 0xFFFF)
